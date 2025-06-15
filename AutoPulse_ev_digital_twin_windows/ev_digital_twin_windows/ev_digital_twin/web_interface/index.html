@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electric Vehicle Digital Twin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Add splash screen styles */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #1d1d1e;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 1s ease-out;
+        }
+        
+        #splash-logo {
+            width: 300px;
+            height: 300px;
+            margin-bottom: 30px;
+            animation: pulse 2s infinite, fadeIn 1.5s ease-out;
+        }
+        
+        #start-button {
+            padding: 12px 30px;
+            font-size: 18px;
+            border-radius: 50px;
+            background: linear-gradient(135deg, #7428a7, #17a2b8);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            animation: fadeIn 2s ease-out;
+        }
+        
+        #start-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Rest of your existing styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-top: 20px;
+            background-color: #f1f1f1;
+        }
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin-bottom: 20px;
+        }
+        .control-panel {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .dashboard {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .dashboard-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .dashboard-label {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .slider-container {
+            margin-bottom: 15px;
+        }
+        .btn-control {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        h1, h2, h3 {
+            color: #343a40;
+        }
+        .header {
+            margin-bottom: 30px;
+        }
+        .footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .nav-tabs {
+            margin-bottom: 20px;
+        }
+        .tab-content {
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .health-indicator {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        .health-bar {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        .battery-cells {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 2px;
+            height: 400px;
+            margin-top: 10px;
+        }
+        .battery-cell {
+            background-color: #e9ecef;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #fff;
+            text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+        }
+        .motor-diagram {
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+        .motor-rotor {
+            width: 150px;
+            height: 150px;
+            background-color: #6c757d;
+            border-radius: 50%;
+            position: relative;
+            margin: 0 auto;
+            animation: rotate 2s linear infinite;
+            animation-play-state: paused;
+        }
+        .motor-rotor.running {
+            animation-play-state: running;
+        }
+        .motor-magnet {
+            position: absolute;
+            width: 40px;
+            height: 20px;
+            background-color: #dc3545;
+            border-radius: 4px;
+        }
+        .motor-magnet:nth-child(1) {
+            top: 65px;
+            left: 10px;
+        }
+        .motor-magnet:nth-child(2) {
+            top: 10px;
+            left: 65px;
+            transform: rotate(90deg);
+        }
+        .motor-magnet:nth-child(3) {
+            top: 65px;
+            right: 10px;
+            transform: rotate(180deg);
+        }
+        .motor-magnet:nth-child(4) {
+            bottom: 10px;
+            left: 65px;
+            transform: rotate(270deg);
+        }
+        .motor-stator {
+            width: 200px;
+            height: 200px;
+            background-color: #495057;
+            border-radius: 50%;
+            position: relative;
+            margin: 0 auto;
+            z-index: -1;
+            margin-top: -175px;
+        }
+        .motor-winding {
+            position: absolute;
+            width: 30px;
+            height: 60px;
+            background-color: #ffc107;
+            border-radius: 4px;
+        }
+        .motor-winding:nth-child(1) {
+            top: 70px;
+            left: 0;
+        }
+        .motor-winding:nth-child(2) {
+            top: 0;
+            left: 85px;
+            transform: rotate(90deg);
+        }
+        .motor-winding:nth-child(3) {
+            top: 70px;
+            right: 0;
+            transform: rotate(180deg);
+        }
+        .motor-winding:nth-child(4) {
+            bottom: 0;
+            left: 85px;
+            transform: rotate(270deg);
+        }
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .time-display {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .report-container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <img src="logo.png" alt="AUTOPULSE Logo" id="splash-logo">
+        <button id="start-button" class="btn btn-lg">Start Simulation</button>
+    </div>
+
+    <!-- Main Content (initially hidden) -->
+    <div id="main-content" style="display: none;">
+        <div class="container">
+            <div class="header text-center">
+                <h1>Electric Vehicle Digital Twin</h1>
+                <p class="lead">Real-time simulation of battery and motor behavior with advanced features</p>
+            </div>
+
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="simulation-tab" data-bs-toggle="tab" data-bs-target="#simulation" type="button" role="tab" aria-controls="simulation" aria-selected="true">Simulation</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="battery-tab" data-bs-toggle="tab" data-bs-target="#battery" type="button" role="tab" aria-controls="battery" aria-selected="false">Battery Details</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="motor-tab" data-bs-toggle="tab" data-bs-target="#motor" type="button" role="tab" aria-controls="motor" aria-selected="false">Motor Details</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="report-tab" data-bs-toggle="tab" data-bs-target="#report" type="button" role="tab" aria-controls="report" aria-selected="false">Reports</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="myTabContent">
+                <!-- Simulation Tab -->
+                <div class="tab-pane fade show active" id="simulation" role="tabpanel" aria-labelledby="simulation-tab">
+                    <div class="row">
+                        <!-- Control Panel -->
+                        <div class="col-md-4">
+                            <div class="control-panel">
+                                <h3>Simulation Controls</h3>
+                                <div class="time-display" id="timeDisplay">00:00</div>
+                                <div class="slider-container">
+                                    <label for="speedSlider" class="form-label">Target Speed: <span id="speedValue">0</span> m/s (<span id="speedKmh">0</span> km/h)</label>
+                                    <input type="range" class="form-range" id="speedSlider" min="0" max="40" step="0.5" value="0">
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button id="startBtn" class="btn btn-success btn-control">Start Simulation</button>
+                                    <button id="pauseBtn" class="btn btn-warning btn-control" disabled>Pause Simulation</button>
+                                    <button id="stopBtn" class="btn btn-danger btn-control" disabled>Stop Simulation</button>
+                                    <button id="exportBtn" class="btn btn-primary btn-control">Export Data (CSV)</button>
+                                    <button id="reportBtn" class="btn btn-info btn-control">Generate Report</button>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h5>Simulation Time: <span id="simTime">0.0</span> s (<span id="simTimeMin">0.0</span> min)</h5>
+                                    <div class="progress">
+                                        <div id="simProgress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Dashboard -->
+                            <div class="dashboard">
+                                <h3>Vehicle Dashboard</h3>
+                                <div class="row text-center">
+                                    <div class="col-6 mb-3">
+                                        <div class="dashboard-value" id="dashSpeed">0.0</div>
+                                        <div class="dashboard-label">Speed (km/h)</div>
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <div class="dashboard-value" id="dashPower">0.0</div>
+                                        <div class="dashboard-label">Power (kW)</div>
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <div class="dashboard-value" id="dashBattery">90.0</div>
+                                        <div class="dashboard-label">Battery (%)</div>
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <div class="dashboard-value" id="dashDistance">0.0</div>
+                                        <div class="dashboard-label">Distance (km)</div>
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <div class="dashboard-value" id="dashRemainingDistance">0.0</div>
+                                        <div class="dashboard-label">Range (km)</div>
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <div class="dashboard-value" id="dashMotorSpeed">0</div>
+                                        <div class="dashboard-label">Motor (rpm)</div>
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <div class="dashboard-value" id="dashTorque">0.0</div>
+                                        <div class="dashboard-label">Torque (Nm)</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="dashboard-value" id="dashBatteryTemp">25.0</div>
+                                        <div class="dashboard-label">Battery Temp (°C)</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="dashboard-value" id="dashMotorTemp">25.0</div>
+                                        <div class="dashboard-label">Motor Temp (°C)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Charts -->
+                        <div class="col-md-8">
+                            <div class="dashboard">
+                                <div class="chart-container">
+                                    <canvas id="speedChart"></canvas>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="batteryChart"></canvas>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="powerChart"></canvas>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="temperatureChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Battery Details Tab -->
+                <div class="tab-pane fade" id="battery" role="tabpanel" aria-labelledby="battery-tab">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="dashboard">
+                                <h3>Battery Health Status</h3>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <h5>State of Health (SOH)</h5>
+                                        <div class="dashboard-value" id="batterySoh">95.0%</div>
+                                        <div class="health-indicator">
+                                            <div class="health-bar bg-success" id="batterySohBar" style="width: 95%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h5>Remaining Useful Life</h5>
+                                        <div class="dashboard-value" id="batteryRul">1500</div>
+                                        <div class="dashboard-label">cycles remaining</div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-6 mb-3">
+                                        <h5>Configuration</h5>
+                                        <div class="dashboard-value">96S4P</div>
+                                        <div class="dashboard-label">384 cells total</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h5>Capacity</h5>
+                                        <div class="dashboard-value">75.0 Ah</div>
+                                        <div class="dashboard-label">400V nominal</div>
+                                    </div>
+                                </div>
+                                <div class="chart-container mt-3">
+                                    <canvas id="batteryHealthChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="dashboard">
+                                <h3>Cell-Level Information</h3>
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <select class="form-select" id="cellViewSelector">
+                                            <option value="soc">State of Charge</option>
+                                            <option value="voltage">Voltage</option>
+                                            <option value="temperature">Temperature</option>
+                                            <option value="soh">State of Health</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="dashboard-label" id="cellViewDescription">
+                                            Showing State of Charge (%) for each cell
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="battery-cells" id="batteryCells">
+                                    <!-- Battery cells will be generated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Motor Details Tab -->
+                <div class="tab-pane fade" id="motor" role="tabpanel" aria-labelledby="motor-tab">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="dashboard">
+                                <h3>Motor Performance</h3>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <h5>Efficiency</h5>
+                                        <div class="dashboard-value" id="motorEfficiency">92.5%</div>
+                                        <div class="health-indicator">
+                                            <div class="health-bar bg-info" id="motorEfficiencyBar" style="width: 92.5%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h5>Temperature</h5>
+                                        <div class="dashboard-value" id="motorTempValue">45.0°C</div>
+                                        <div class="health-indicator">
+                                            <div class="health-bar bg-warning" id="motorTempBar" style="width: 45%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-6 mb-3">
+                                        <h5>Remaining Useful Life</h5>
+                                        <div class="dashboard-value" id="motorRul">2500</div>
+                                        <div class="dashboard-label">hours remaining</div>
+                                        <div class="health-indicator">
+                                            <div class="health-bar bg-success" id="motorRulBar" style="width: 83%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h5>Predicted Failure</h5>
+                                        <div class="dashboard-value" id="motorFailureTime">312</div>
+                                        <div class="dashboard-label">days at current usage</div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-6 mb-3">
+                                        <h5>Configuration</h5>
+                                        <div class="dashboard-value">PMSM</div>
+                                        <div class="dashboard-label">Permanent Magnet Synchronous Motor</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <h5>Power Rating</h5>
+                                        <div class="dashboard-value">150 kW</div>
+                                        <div class="dashboard-label">Peak: 250 kW</div>
+                                    </div>
+                                </div>
+                                <div class="chart-container mt-3">
+                                    <canvas id="motorPerformanceChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="dashboard">
+                                <h3>Motor Visualization</h3>
+                                <div class="motor-diagram">
+                                    <div class="motor-rotor" id="motorRotor">
+                                        <div class="motor-magnet"></div>
+                                        <div class="motor-magnet"></div>
+                                        <div class="motor-magnet"></div>
+                                        <div class="motor-magnet"></div>
+                                    </div>
+                                    <div class="motor-stator">
+                                        <div class="motor-winding"></div>
+                                        <div class="motor-winding"></div>
+                                        <div class="motor-winding"></div>
+                                        <div class="motor-winding"></div>
+                                    </div>
+                                </div>
+                                <div class="row text-center mt-4">
+                                    <div class="col-4">
+                                        <div class="dashboard-value" id="motorCurrentSpeed">0</div>
+                                        <div class="dashboard-label">Current Speed (rpm)</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="dashboard-value" id="motorCurrentTorque">0.0</div>
+                                        <div class="dashboard-label">Current Torque (Nm)</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="dashboard-value" id="motorCurrentTemp">25.0</div>
+                                        <div class="dashboard-label">Temperature (°C)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports Tab -->
+                <div class="tab-pane fade" id="report" role="tabpanel" aria-labelledby="report-tab">
+                    <div class="dashboard">
+                        <h3>Simulation Reports</h3>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="reportType" class="form-label">Report Type</label>
+                                    <select class="form-select" id="reportType">
+                                        <option value="summary">Simulation Summary</option>
+                                        <option value="battery">Battery Performance</option>
+                                        <option value="motor">Motor Performance</option>
+                                        <option value="energy">Energy Consumption</option>
+                                        <option value="full">Full Detailed Report</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="reportFormat" class="form-label">Format</label>
+                                    <select class="form-select" id="reportFormat">
+                                        <option value="html">HTML</option>
+                                        <option value="csv">CSV</option>
+                                        <option value="json">JSON</option>
+                                        <option value="pdf">PDF</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-grid gap-2 col-md-4 mx-auto mb-4">
+                            <button id="generateReportBtn" class="btn btn-primary">Generate Report</button>
+                            <button id="downloadReportBtn" class="btn btn-success">Download Report</button>
+                        </div>
+                        <div class="report-container" id="reportContainer">
+                            <p class="text-center text-muted">No report generated yet. Use the controls above to generate a report.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>Electric Vehicle Digital Twin Simulation - Created with JavaScript, Chart.js and Bootstrap</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Wait for the page to load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get the splash screen and start button
+            const splashScreen = document.getElementById('splash-screen');
+            const startButton = document.getElementById('start-button');
+            const mainContent = document.getElementById('main-content');
+            
+            // When start button is clicked
+            startButton.addEventListener('click', function() {
+                // Fade out the splash screen
+                splashScreen.style.opacity = '0';
+                
+                // After fade out completes, hide splash and show main content
+                setTimeout(function() {
+                    splashScreen.style.display = 'none';
+                    mainContent.style.display = 'block';
+                    
+                    // Initialize your simulation if needed
+                    initBatteryCells();
+                    updateSpeedDisplay();
+                    updateDashboard();
+                    updateSimulationTime();
+                }, 1000);
+            });
+        });
+
+        // Rest of your existing JavaScript code...
+        // Simulation parameters
+        const MAX_TIME = Infinity; // No time limit for simulation
+        const DT = 0.1; // Time step in seconds
+        
+        // Vehicle parameters
+        const vehicleParams = {
+            batteryCapacity: 75.0, // kWh
+            batteryNominalVoltage: 400.0, // V
+            motorPower: 150.0, // kW
+            motorNominalSpeed: 8000.0, // rpm
+            vehicleMass: 2000.0, // kg
+            wheelRadius: 0.33, // m
+            gearRatio: 9.0,
+            dragCoefficient: 0.28,
+            frontalArea: 2.3, // m²
+            rollingResistance: 0.01
+        };
+        
+        // Battery model parameters
+        const batteryParams = {
+            initialSoc: 0.9,
+            rInternal: 0.05, // Ohms
+            thermalMass: 1200.0, // J/K
+            coolingCoefficient: 10.0, // W/K
+            ambientTemp: 25.0, // °C
+            kVoltage: 0.1 // Voltage vs SOC curve steepness
+        };
+        
+        // Motor model parameters
+        const motorParams = {
+            rStator: 0.05, // Ohms
+            polePairs: 3,
+            jRotor: 0.01, // kg*m²
+            bFriction: 0.001, // Nm*s/rad
+            maxCurrent: 300.0, // A
+            nominalLife: 3000, // hours
+            temperatureCoefficient: 0.8, // life reduction per 10°C above nominal
+            nominalTemperature: 80.0, // °C
+            wearCoefficient: 0.5, // life reduction per high load operation
+            nominalLoad: 0.7 // fraction of max torque
+        };
+        
+        // Simulation state
+        let simulationRunning = false;
+        let simulationPaused = false;
+        let currentTime = 0;
+        let targetSpeed = 0; // m/s
+        let simulationInterval;
+        
+        // Vehicle state
+        let vehicleState = {
+            speed: 0, // m/s
+            acceleration: 0, // m/s²
+            distance: 0, // m
+            powerDemand: 0, // kW
+            batterySoc: batteryParams.initialSoc,
+            batteryVoltage: vehicleParams.batteryNominalVoltage,
+            batteryCurrent: 0, // A
+            batteryTemperature: batteryParams.ambientTemp, // °C
+            motorSpeed: 0, // rpm
+            motorTorque: 0, // Nm
+            motorEfficiency: 0, // %
+            motorTemperature: batteryParams.ambientTemp // °C
+        };
+        
+        // Data storage for charts
+        const timeData = [];
+        const speedData = [];
+        const batteryData = [];
+        const powerData = [];
+        const distanceData = [];
+        const temperatureData = [];
+        const motorSpeedData = [];
+        const motorTorqueData = [];
+        const motorTempData = [];
+        
+        // Initialize charts
+        const speedChart = new Chart(document.getElementById('speedChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Speed (m/s)',
+                    data: [],
+                    borderColor: 'rgb(54, 162, 235)',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time (s)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Speed (m/s)'
+                        },
+                        min: 0
+                    }
+                }
+            }
+        });
+        
+        const batteryChart = new Chart(document.getElementById('batteryChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Battery SOC (%)',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1,
+                    fill: false,
+                    yAxisID: 'y'
+                }, {
+                    label: 'Battery Temperature (°C)',
+                    data: [],
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1,
+                    fill: false,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time (s)'
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'SOC (%)'
+                        },
+                        min: 0,
+                        max: 100
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Temperature (°C)'
+                        },
+                        min: 20,
+                        max: 60,
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            }
+        });
+        
+        const powerChart = new Chart(document.getElementById('powerChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Power (kW)',
+                    data: [],
+                    borderColor: 'rgb(255, 159, 64)',
+                    tension: 0.1,
+                    fill: false,
+                    yAxisID: 'y'
+                }, {
+                    label: 'Motor Speed (rpm)',
+                    data: [],
+                    borderColor: 'rgb(153, 102, 255)',
+                    tension: 0.1,
+                    fill: false,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time (s)'
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Power (kW)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Motor Speed (rpm)'
+                        },
+                        min: 0,
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            }
+        });
+        
+        const temperatureChart = new Chart(document.getElementById('temperatureChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Battery Temperature (°C)',
+                    data: [],
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1,
+                    fill: false
+                }, {
+                    label: 'Motor Temperature (°C)',
+                    data: [],
+                    borderColor: 'rgb(54, 162, 235)',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time (s)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Temperature (°C)'
+                        },
+                        min: 20,
+                        max: 100
+                    }
+                }
+            }
+        });
+        
+        const batteryHealthChart = new Chart(document.getElementById('batteryHealthChart'), {
+            type: 'line',
+            data: {
+                labels: ['0', '100', '200', '300', '400', '500', '600', '700', '800', '900', '1000'],
+                datasets: [{
+                    label: 'State of Health (%)',
+                    data: [100, 99, 98, 97, 96, 95, 93, 91, 89, 86, 83],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Cycles'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'SOH (%)'
+                        },
+                        min: 80,
+                        max: 100
+                    }
+                }
+            }
+        });
+        
+        const motorPerformanceChart = new Chart(document.getElementById('motorPerformanceChart'), {
+            type: 'line',
+            data: {
+                labels: ['0', '1000', '2000', '3000', '4000', '5000', '6000', '7000', '8000', '9000', '10000'],
+                datasets: [{
+                    label: 'Torque (Nm)',
+                    data: [250, 250, 250, 250, 250, 187.5, 156.25, 133.9, 117.2, 104.2, 93.75],
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1,
+                    fill: false,
+                    yAxisID: 'y'
+                }, {
+                    label: 'Power (kW)',
+                    data: [0, 26.2, 52.4, 78.5, 104.7, 98.2, 98.2, 98.2, 98.2, 98.2, 98.2],
+                    borderColor: 'rgb(54, 162, 235)',
+                    tension: 0.1,
+                    fill: false,
+                    yAxisID: 'y1'
+                }, {
+                    label: 'Efficiency (%)',
+                    data: [0, 82, 88, 91, 93, 94, 95, 94, 93, 91, 89],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1,
+                    fill: false,
+                    yAxisID: 'y2'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Speed (rpm)'
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Torque (Nm)'
+                        },
+                        min: 0,
+                        max: 300
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Power (kW)'
+                        },
+                        min: 0,
+                        max: 150,
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    },
+                    y2: {
+                        type: 'linear',
+                        display: false,
+                        min: 0,
+                        max: 100
+                    }
+                }
+            }
+        });
+        
+        // UI elements
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        const speedKmh = document.getElementById('speedKmh');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const reportBtn = document.getElementById('reportBtn');
+        const simTime = document.getElementById('simTime');
+        const simTimeMin = document.getElementById('simTimeMin');
+        const simProgress = document.getElementById('simProgress');
+        const timeDisplay = document.getElementById('timeDisplay');
+        
+        // Dashboard elements
+        const dashSpeed = document.getElementById('dashSpeed');
+        const dashPower = document.getElementById('dashPower');
+        const dashBattery = document.getElementById('dashBattery');
+        const dashDistance = document.getElementById('dashDistance');
+        const dashMotorSpeed = document.getElementById('dashMotorSpeed');
+        const dashTorque = document.getElementById('dashTorque');
+        const dashBatteryTemp = document.getElementById('dashBatteryTemp');
+        const dashMotorTemp = document.getElementById('dashMotorTemp');
+        
+        // Motor visualization elements
+        const motorRotor = document.getElementById('motorRotor');
+        const motorCurrentSpeed = document.getElementById('motorCurrentSpeed');
+        const motorCurrentTorque = document.getElementById('motorCurrentTorque');
+        const motorCurrentTemp = document.getElementById('motorCurrentTemp');
+        
+        // Report elements
+        const generateReportBtn = document.getElementById('generateReportBtn');
+        const reportContainer = document.getElementById('reportContainer');
+        
+        // Initialize battery cells visualization
+        function initBatteryCells() {
+            const batteryCells = document.getElementById('batteryCells');
+            if (!batteryCells) return;
+            
+            batteryCells.innerHTML = '';
+            for (let i = 0; i < 96; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'battery-cell';
+                cell.id = `cell-${i}`;
+                cell.style.backgroundColor = getColorForSOC(90);
+                cell.textContent = '90%';
+                batteryCells.appendChild(cell);
+            }
+        }
+        
+        function getColorForSOC(soc) {
+            if (soc > 80) return '#28a745'; // Green
+            if (soc > 50) return '#17a2b8'; // Blue
+            if (soc > 20) return '#ffc107'; // Yellow
+            return '#dc3545'; // Red
+        }
+        
+        function getColorForTemp(temp) {
+            if (temp < 35) return '#28a745'; // Green
+            if (temp < 45) return '#17a2b8'; // Blue
+            if (temp < 55) return '#ffc107'; // Yellow
+            return '#dc3545'; // Red
+        }
+        
+        function getColorForVoltage(voltage) {
+            if (voltage > 3.9) return '#28a745'; // Green
+            if (voltage > 3.6) return '#17a2b8'; // Blue
+            if (voltage > 3.3) return '#ffc107'; // Yellow
+            return '#dc3545'; // Red
+        }
+        
+        function getColorForSOH(soh) {
+            if (soh > 90) return '#28a745'; // Green
+            if (soh > 80) return '#17a2b8'; // Blue
+            if (soh > 70) return '#ffc107'; // Yellow
+            return '#dc3545'; // Red
+        }
+        
+        // Event listeners
+        speedSlider.addEventListener('input', function() {
+            targetSpeed = parseFloat(this.value);
+            updateSpeedDisplay();
+        });
+        
+        startBtn.addEventListener('click', startSimulation);
+        pauseBtn.addEventListener('click', togglePauseSimulation);
+        stopBtn.addEventListener('click', stopSimulation);
+        exportBtn.addEventListener('click', exportData);
+        reportBtn.addEventListener('click', generateReport);
+        generateReportBtn.addEventListener('click', generateDetailedReport);
+        
+        // Cell view selector
+        const cellViewSelector = document.getElementById('cellViewSelector');
+        if (cellViewSelector) {
+            cellViewSelector.addEventListener('change', updateCellView);
+        }
+        
+        function updateCellView() {
+            const viewType = cellViewSelector.value;
+            const cellViewDescription = document.getElementById('cellViewDescription');
+            const cells = document.querySelectorAll('.battery-cell');
+            
+            let description = '';
+            let colorFn = null;
+            let valueFn = null;
+            let unit = '';
+            
+            switch (viewType) {
+                case 'soc':
+                    description = 'Showing State of Charge (%) for each cell';
+                    colorFn = getColorForSOC;
+                    valueFn = () => 90 - Math.random() * 5;
+                    unit = '%';
+                    break;
+                case 'voltage':
+                    description = 'Showing Voltage (V) for each cell';
+                    colorFn = getColorForVoltage;
+                    valueFn = () => 3.9 - Math.random() * 0.3;
+                    unit = 'V';
+                    break;
+                case 'temperature':
+                    description = 'Showing Temperature (°C) for each cell';
+                    colorFn = getColorForTemp;
+                    valueFn = () => 25 + Math.random() * 15;
+                    unit = '°C';
+                    break;
+                case 'soh':
+                    description = 'Showing State of Health (%) for each cell';
+                    colorFn = getColorForSOH;
+                    valueFn = () => 95 - Math.random() * 10;
+                    unit = '%';
+                    break;
+            }
+            
+            cellViewDescription.textContent = description;
+            
+            cells.forEach(cell => {
+                const value = valueFn();
+                cell.style.backgroundColor = colorFn(value);
+                cell.textContent = unit === 'V' ? value.toFixed(2) + unit : Math.round(value) + unit;
+            });
+        }
+        
+        function updateSpeedDisplay() {
+            speedValue.textContent = targetSpeed.toFixed(1);
+            speedKmh.textContent = (targetSpeed * 3.6).toFixed(1);
+        }
+        
+        function startSimulation() {
+            if (!simulationRunning) {
+                simulationRunning = true;
+                simulationPaused = false;
+                
+                // Reset simulation if it was previously run
+                if (currentTime > 0) {
+                    resetSimulation();
+                }
+                
+                // Update UI
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                stopBtn.disabled = false;
+                
+                // Start motor animation
+                motorRotor.classList.add('running');
+                
+                // Start simulation loop
+                simulationInterval = setInterval(simulationStep, DT * 1000);
+            }
+        }
+        
+        function togglePauseSimulation() {
+            simulationPaused = !simulationPaused;
+            pauseBtn.textContent = simulationPaused ? 'Resume Simulation' : 'Pause Simulation';
+            
+            // Pause/resume motor animation
+            if (simulationPaused) {
+                motorRotor.classList.remove('running');
+            } else {
+                motorRotor.classList.add('running');
+            }
+        }
+        
+        function stopSimulation() {
+            if (simulationRunning) {
+                simulationRunning = false;
+                clearInterval(simulationInterval);
+                
+                // Update UI
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                stopBtn.disabled = true;
+                pauseBtn.textContent = 'Pause Simulation';
+                
+                // Stop motor animation
+                motorRotor.classList.remove('running');
+            }
+        }
+        
+        function resetSimulation() {
+            // Reset time and data
+            currentTime = 0;
+            timeData.length = 0;
+            speedData.length = 0;
+            batteryData.length = 0;
+            powerData.length = 0;
+            distanceData.length = 0;
+            temperatureData.length = 0;
+            motorSpeedData.length = 0;
+            motorTorqueData.length = 0;
+            motorTempData.length = 0;
+            
+            // Reset vehicle state
+            vehicleState = {
+                speed: 0,
+                acceleration: 0,
+                distance: 0,
+                powerDemand: 0,
+                batterySoc: batteryParams.initialSoc,
+                batteryVoltage: vehicleParams.batteryNominalVoltage,
+                batteryCurrent: 0,
+                batteryTemperature: batteryParams.ambientTemp,
+                motorSpeed: 0,
+                motorTorque: 0,
+                motorEfficiency: 0,
+                motorTemperature: batteryParams.ambientTemp
+            };
+            
+            // Reset charts
+            speedChart.data.labels = [];
+            speedChart.data.datasets[0].data = [];
+            batteryChart.data.labels = [];
+            batteryChart.data.datasets[0].data = [];
+            batteryChart.data.datasets[1].data = [];
+            powerChart.data.labels = [];
+            powerChart.data.datasets[0].data = [];
+            powerChart.data.datasets[1].data = [];
+            temperatureChart.data.labels = [];
+            temperatureChart.data.datasets[0].data = [];
+            temperatureChart.data.datasets[1].data = [];
+            
+            // Update charts
+            speedChart.update();
+            batteryChart.update();
+            powerChart.update();
+            temperatureChart.update();
+            
+            // Reset UI
+            updateDashboard();
+            updateSimulationTime();
+        }
+        
+        function simulationStep() {
+            if (simulationPaused) return;
+            
+            // Update time
+            currentTime += DT;
+            
+            // Calculate vehicle dynamics
+            calculateVehicleDynamics();
+            
+            // Update data arrays
+            timeData.push(currentTime);
+            speedData.push(vehicleState.speed);
+            batteryData.push(vehicleState.batterySoc * 100);
+            powerData.push(vehicleState.powerDemand);
+            distanceData.push(vehicleState.distance);
+            temperatureData.push(vehicleState.batteryTemperature);
+            motorSpeedData.push(vehicleState.motorSpeed);
+            motorTorqueData.push(vehicleState.motorTorque);
+            motorTempData.push(vehicleState.motorTemperature);
+            
+            // Update charts
+            updateCharts();
+            
+            // Update dashboard
+            updateDashboard();
+            
+            // Update simulation time display
+            updateSimulationTime();
+        }
+        
+        function calculateVehicleDynamics() {
+            // Calculate acceleration based on target speed
+            const speedError = targetSpeed - vehicleState.speed;
+            const maxAccel = 3.0; // m/s²
+            vehicleState.acceleration = Math.max(-maxAccel, Math.min(maxAccel, speedError * 0.5));
+            
+            // Update speed
+            vehicleState.speed += vehicleState.acceleration * DT;
+            vehicleState.speed = Math.max(0, vehicleState.speed);
+            
+            // Update distance (in kilometers, not meters)
+            // Convert speed from m/s to km/s and multiply by time step
+            vehicleState.distance += (vehicleState.speed / 1000) * DT;
+            
+            // Calculate resistive forces
+            const rollingResistance = vehicleParams.rollingResistance * vehicleParams.vehicleMass * 9.81; // N
+            const aeroDrag = 0.5 * 1.225 * vehicleParams.dragCoefficient * vehicleParams.frontalArea * vehicleState.speed * vehicleState.speed; // N
+            const totalResistance = rollingResistance + aeroDrag; // N
+            
+            // Calculate required force and torque
+            const requiredForce = totalResistance + vehicleParams.vehicleMass * vehicleState.acceleration; // N
+            const wheelTorque = requiredForce * vehicleParams.wheelRadius; // Nm
+            vehicleState.motorTorque = wheelTorque / vehicleParams.gearRatio; // Nm
+            
+            // Calculate motor speed
+            vehicleState.motorSpeed = (vehicleState.speed / vehicleParams.wheelRadius) * vehicleParams.gearRatio * 60 / (2 * Math.PI); // rpm
+            
+            // Calculate power demand
+            const mechanicalPower = vehicleState.motorTorque * vehicleState.motorSpeed * 2 * Math.PI / 60 / 1000; // kW
+            
+            // Calculate motor efficiency
+            vehicleState.motorEfficiency = calculateMotorEfficiency(vehicleState.motorSpeed, vehicleState.motorTorque);
+            
+            // Calculate electrical power
+            vehicleState.powerDemand = mechanicalPower / (vehicleState.motorEfficiency / 100);
+            if (vehicleState.motorTorque < 0) {
+                // Regenerative braking (with lower efficiency)
+                vehicleState.powerDemand = mechanicalPower * 0.7;
+            }
+            
+            // Update battery state
+            updateBatteryState();
+            
+            // Update motor temperature
+            updateMotorTemperature();
+        }
+        
+        function calculateMotorEfficiency(speed, torque) {
+            // Simple efficiency model based on speed and torque
+            const nominalSpeed = vehicleParams.motorNominalSpeed;
+            const nominalTorque = vehicleParams.motorPower * 1000 / (nominalSpeed * 2 * Math.PI / 60);
+            
+            const speedRatio = speed / nominalSpeed;
+            const torqueRatio = Math.abs(torque) / nominalTorque;
+            
+            // Base efficiency
+            let efficiency = 92.0;
+            
+            // Reduce efficiency at very low or very high speeds
+            if (speedRatio < 0.2) {
+                efficiency -= 10.0 * (0.2 - speedRatio);
+            } else if (speedRatio > 1.2) {
+                efficiency -= 5.0 * (speedRatio - 1.2);
+            }
+            
+            // Reduce efficiency at very high torque
+            if (torqueRatio > 0.8) {
+                efficiency -= 5.0 * (torqueRatio - 0.8);
+            }
+            
+            // Reduce efficiency at very low torque
+            if (torqueRatio < 0.1 && speed > 100) {
+                efficiency -= 10.0 * (0.1 - torqueRatio);
+            }
+            
+            return Math.max(60, Math.min(95, efficiency));
+        }
+        
+        function updateBatteryState() {
+            // Calculate battery current
+            vehicleState.batteryCurrent = vehicleState.powerDemand * 1000 / vehicleState.batteryVoltage; // A
+            
+            // Update SOC
+            const batteryCapacityWh = vehicleParams.batteryCapacity * 1000;
+            const energyUsed = vehicleState.powerDemand * DT / 3600; // kWh
+            const socChange = energyUsed / vehicleParams.batteryCapacity;
+            vehicleState.batterySoc = Math.max(0, Math.min(1, vehicleState.batterySoc - socChange));
+            
+            // Update battery voltage based on SOC
+            const socEffect = (vehicleState.batterySoc - 0.5) * batteryParams.kVoltage;
+            const currentEffect = vehicleState.batteryCurrent * batteryParams.rInternal / vehicleParams.batteryNominalVoltage;
+            vehicleState.batteryVoltage = vehicleParams.batteryNominalVoltage * (1 + socEffect - currentEffect);
+            
+            // Update battery temperature
+            const jouleHeating = Math.pow(vehicleState.batteryCurrent, 2) * batteryParams.rInternal; // W
+            const cooling = batteryParams.coolingCoefficient * (vehicleState.batteryTemperature - batteryParams.ambientTemp); // W
+            const tempChange = (jouleHeating - cooling) * DT / batteryParams.thermalMass; // °C
+            vehicleState.batteryTemperature += tempChange;
+        }
+        
+        function updateMotorTemperature() {
+            // Simple motor temperature model
+            const motorLosses = vehicleState.powerDemand * (1 - vehicleState.motorEfficiency / 100) * 1000; // W
+            const motorCooling = 15.0 * (vehicleState.motorTemperature - batteryParams.ambientTemp); // W
+            const motorThermalMass = 800.0; // J/K
+            const tempChange = (motorLosses - motorCooling) * DT / motorThermalMass; // °C
+            vehicleState.motorTemperature += tempChange;
+        }
+        
+        function updateCharts() {
+            // Update speed chart
+            speedChart.data.labels = timeData.map(t => t.toFixed(1));
+            speedChart.data.datasets[0].data = speedData;
+            speedChart.update();
+            
+            // Update battery chart
+            batteryChart.data.labels = timeData.map(t => t.toFixed(1));
+            batteryChart.data.datasets[0].data = batteryData;
+            batteryChart.data.datasets[1].data = temperatureData;
+            batteryChart.update();
+            
+            // Update power chart
+            powerChart.data.labels = timeData.map(t => t.toFixed(1));
+            powerChart.data.datasets[0].data = powerData;
+            powerChart.data.datasets[1].data = motorSpeedData;
+            powerChart.update();
+            
+            // Update temperature chart
+            temperatureChart.data.labels = timeData.map(t => t.toFixed(1));
+            temperatureChart.data.datasets[0].data = temperatureData;
+            temperatureChart.data.datasets[1].data = motorTempData;
+            temperatureChart.update();
+        }
+        
+        function updateDashboard() {
+            // Update dashboard values
+            dashSpeed.textContent = (vehicleState.speed * 3.6).toFixed(1);
+            dashPower.textContent = vehicleState.powerDemand.toFixed(1);
+            dashBattery.textContent = (vehicleState.batterySoc * 100).toFixed(1);
+            dashDistance.textContent = (vehicleState.distance / 1000).toFixed(2);
+            dashMotorSpeed.textContent = Math.round(vehicleState.motorSpeed);
+            dashTorque.textContent = vehicleState.motorTorque.toFixed(1);
+            dashBatteryTemp.textContent = vehicleState.batteryTemperature.toFixed(1);
+            dashMotorTemp.textContent = vehicleState.motorTemperature.toFixed(1);
+            
+            // Update motor visualization
+            motorCurrentSpeed.textContent = Math.round(vehicleState.motorSpeed);
+            motorCurrentTorque.textContent = vehicleState.motorTorque.toFixed(1);
+            
+            // Update motor efficiency display
+            if (document.getElementById('motorEfficiency')) {
+                document.getElementById('motorEfficiency').textContent = vehicleState.motorEfficiency.toFixed(1) + '%';
+                document.getElementById('motorEfficiencyBar').style.width = vehicleState.motorEfficiency + '%';
+            }
+            
+            // Update motor temperature display
+            if (document.getElementById('motorTempValue')) {
+                document.getElementById('motorTempValue').textContent = vehicleState.motorTemperature.toFixed(1) + '°C';
+                document.getElementById('motorTempBar').style.width = vehicleState.motorTemperature + '%';
+            }
+        }
+        
+        function updateSimulationTime() {
+            // Update time display
+            simTime.textContent = currentTime.toFixed(1);
+            simTimeMin.textContent = (currentTime / 60).toFixed(1);
+            
+            // Update progress bar
+            const progress = (currentTime / MAX_TIME) * 100;
+            simProgress.style.width = progress + '%';
+            
+            // Update time display in MM:SS format
+            const minutes = Math.floor(currentTime / 60);
+            const seconds = Math.floor(currentTime % 60);
+            timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        function exportData() {
+            // Create CSV content
+            let csvContent = 'Time (s),Speed (m/s),Speed (km/h),Battery SOC (%),Battery Voltage (V),Battery Current (A),';
+            csvContent += 'Battery Temperature (°C),Motor Speed (rpm),Motor Torque (Nm),Motor Efficiency (%),Motor Temperature (°C),';
+            csvContent += 'Power Demand (kW),Distance (m)\n';
+            
+            for (let i = 0; i < timeData.length; i++) {
+                csvContent += `${timeData[i]},${speedData[i]},${speedData[i] * 3.6},${batteryData[i]},`;
+                csvContent += `${vehicleState.batteryVoltage},${vehicleState.batteryCurrent},${temperatureData[i]},`;
+                csvContent += `${motorSpeedData[i]},${motorTorqueData[i]},${vehicleState.motorEfficiency},${motorTempData[i]},`;
+                csvContent += `${powerData[i]},${distanceData[i]}\n`;
+            }
+            
+            // Create download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'ev_simulation_results.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function generateReport() {
+            // Generate a simple report
+            const reportContent = `
+                <h4>Simulation Report</h4>
+                <p>Time: ${currentTime.toFixed(1)} seconds (${(currentTime / 60).toFixed(1)} minutes)</p>
+                <hr>
+                <h5>Vehicle Performance</h5>
+                <ul>
+                    <li>Current Speed: ${(vehicleState.speed * 3.6).toFixed(1)} km/h</li>
+                    <li>Distance Traveled: ${(vehicleState.distance / 1000).toFixed(2)} km</li>
+                    <li>Average Speed: ${((vehicleState.distance / currentTime) * 3.6).toFixed(1)} km/h</li>
+                </ul>
+                <hr>
+                <h5>Battery Status</h5>
+                <ul>
+                    <li>State of Charge: ${(vehicleState.batterySoc * 100).toFixed(1)}%</li>
+                    <li>Battery Voltage: ${vehicleState.batteryVoltage.toFixed(1)} V</li>
+                    <li>Battery Temperature: ${vehicleState.batteryTemperature.toFixed(1)} °C</li>
+                    <li>Energy Used: ${(vehicleParams.batteryCapacity * (batteryParams.initialSoc - vehicleState.batterySoc)).toFixed(2)} kWh</li>
+                </ul>
+                <hr>
+                <h5>Motor Status</h5>
+                <ul>
+                    <li>Motor Speed: ${Math.round(vehicleState.motorSpeed)} rpm</li>
+                    <li>Motor Torque: ${vehicleState.motorTorque.toFixed(1)} Nm</li>
+                    <li>Motor Efficiency: ${vehicleState.motorEfficiency.toFixed(1)}%</li>
+                    <li>Motor Temperature: ${vehicleState.motorTemperature.toFixed(1)} °C</li>
+                </ul>
+                <hr>
+                <h5>Energy Consumption</h5>
+                <ul>
+                    <li>Current Power: ${vehicleState.powerDemand.toFixed(1)} kW</li>
+                    <li>Energy Consumption: ${(vehicleParams.batteryCapacity * (batteryParams.initialSoc - vehicleState.batterySoc) / (vehicleState.distance / 1000) * 100).toFixed(2)} kWh/100km</li>
+                </ul>
+            `;
+            
+            // Display the report
+            alert('Report generated! Check the Reports tab for details.');
+            
+            // Switch to reports tab
+            const reportTab = document.getElementById('report-tab');
+            if (reportTab) {
+                reportTab.click();
+            }
+            
+            // Update report container
+            reportContainer.innerHTML = reportContent;
+        }
+        
+        function generateDetailedReport() {
+            const reportType = document.getElementById('reportType').value;
+            const reportFormat = document.getElementById('reportFormat').value;
+            
+            let reportContent = '';
+            
+            switch (reportType) {
+                case 'summary':
+                    reportContent = generateSummaryReport();
+                    break;
+                case 'battery':
+                    reportContent = generateBatteryReport();
+                    break;
+                case 'motor':
+                    reportContent = generateMotorReport();
+                    break;
+                case 'energy':
+                    reportContent = generateEnergyReport();
+                    break;
+                case 'full':
+                    reportContent = generateFullReport();
+                    break;
+            }
+            
+            // Display the report
+            reportContainer.innerHTML = reportContent;
+            
+            // Enable download button
+            document.getElementById('downloadReportBtn').disabled = false;
+            
+            // If format is not HTML, show download message
+            if (reportFormat !== 'html') {
+                reportContainer.innerHTML += `
+                    <div class="alert alert-info mt-3">
+                        <p>Your report has been prepared in ${reportFormat.toUpperCase()} format.</p>
+                        <p>Click the Download Report button to download the file.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function generateSummaryReport() {
+            return `
+                <h4>Simulation Summary Report</h4>
+                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <p>Simulation Time: ${currentTime.toFixed(1)} seconds (${(currentTime / 60).toFixed(1)} minutes)</p>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Vehicle Performance</h5>
+                        <table class="table table-striped">
+                            <tr>
+                                <td>Current Speed</td>
+                                <td>${(vehicleState.speed * 3.6).toFixed(1)} km/h</td>
+                            </tr>
+                            <tr>
+                                <td>Distance Traveled</td>
+                                <td>${(vehicleState.distance / 1000).toFixed(2)} km</td>
+                            </tr>
+                            <tr>
+                                <td>Average Speed</td>
+                                <td>${((vehicleState.distance / currentTime) * 3.6).toFixed(1)} km/h</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Energy Consumption</h5>
+                        <table class="table table-striped">
+                            <tr>
+                                <td>Energy Used</td>
+                                <td>${(vehicleParams.batteryCapacity * (batteryParams.initialSoc - vehicleState.batterySoc)).toFixed(2)} kWh</td>
+                            </tr>
+                            <tr>
+                                <td>Energy Consumption</td>
+                                <td>${(vehicleParams.batteryCapacity * (batteryParams.initialSoc - vehicleState.batterySoc) / (vehicleState.distance / 1000) * 100).toFixed(2)} kWh/100km</td>
+                            </tr>
+                            <tr>
+                                <td>Remaining Range (est.)</td>
+                                <td>${(vehicleState.distance / (batteryParams.initialSoc - vehicleState.batterySoc) * vehicleState.batterySoc / 1000).toFixed(1)} km</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function generateBatteryReport() {
+            return `
+                <h4>Battery Performance Report</h4>
+                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <p>Simulation Time: ${currentTime.toFixed(1)} seconds (${(currentTime / 60).toFixed(1)} minutes)</p>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Battery Status</h5>
+                        <table class="table table-striped">
+                            <tr>
+                                <td>State of Charge</td>
+                                <td>${(vehicleState.batterySoc * 100).toFixed(1)}%</td>
+                            </tr>
+                            <tr>
+                                <td>Battery Voltage</td>
+                                <td>${vehicleState.batteryVoltage.toFixed(1)} V</td>
+                            </tr>
+                            <tr>
+                                <td>Battery Current</td>
+                                <td>${vehicleState.batteryCurrent.toFixed(1)} A</td>
+                            </tr>
+                            <tr>
+                                <td>Battery Temperature</td>
+                                <td>${vehicleState.batteryTemperature.toFixed(1)} °C</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Battery Performance</h5>
+                        <table class="table table-striped">
+                            <tr>
+                                <td>Energy Used</td>
+                                <td>${(vehicleParams.batteryCapacity * (batteryParams.initialSoc - vehicleState.batterySoc)).toFixed(2)} kWh</td>
+                            </tr>
+                            <tr>
+                                <td>Energy Remaining</td>
+                                <td>${(vehicleParams.batteryCapacity * vehicleState.batterySoc).toFixed(2)} kWh</td>
+                            </tr>
+                            <tr>
+                                <td>Internal Resistance</td>
+                                <td>${batteryParams.rInternal.toFixed(3)} Ohms</td>
+                            </tr>
+                            <tr>
+                                <td>State of Health</td>
+                                <td>95.0%</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <hr>
+                <h5>Battery Cell Statistics</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <p><strong>Cell Voltage</strong></p>
+                        <p>Min: 3.85 V</p>
+                        <p>Max: 3.92 V</p>
+                        <p>Avg: 3.89 V</p>
+                        <p>Std Dev: 0.02 V</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Cell Temperature</strong></p>
+                        <p>Min: ${(vehicleState.batteryTemperature - 2).toFixed(1)} °C</p>
+                        <p>Max: ${(vehicleState.batteryTemperature + 2).toFixed(1)} °C</p>
+                        <p>Avg: ${vehicleState.batteryTemperature.toFixed(1)} °C</p>
+                        <p>Std Dev: 1.2 °C</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Cell SOC</strong></p>
+                        <p>Min: ${(vehicleState.batterySoc * 100 - 1).toFixed(1)}%</p>
+                        <p>Max: ${(vehicleState.batterySoc * 100 + 1).toFixed(1)}%</p>
+                        <p>Avg: ${(vehicleState.batterySoc * 100).toFixed(1)}%</p>
+                        <p>Std Dev: 0.5%</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Cell SOH</strong></p>
+                        <p>Min: 93.5%</p>
+                        <p>Max: 96.8%</p>
+                        <p>Avg: 95.0%</p>
+                        <p>Std Dev: 0.8%</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function generateMotorReport() {
+            return `
+                <h4>Motor Performance Report</h4>
+                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <p>Simulation Time: ${currentTime.toFixed(1)} seconds (${(currentTime / 60).toFixed(1)} minutes)</p>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Motor Status</h5>
+                        <table class="table table-striped">
+                            <tr>
+                                <td>Motor Speed</td>
+                                <td>${Math.round(vehicleState.motorSpeed)} rpm</td>
+                            </tr>
+                            <tr>
+                                <td>Motor Torque</td>
+                                <td>${vehicleState.motorTorque.toFixed(1)} Nm</td>
+                            </tr>
+                            <tr>
+                                <td>Motor Power</td>
+                                <td>${(vehicleState.motorTorque * vehicleState.motorSpeed * 2 * Math.PI / 60 / 1000).toFixed(1)} kW</td>
+                            </tr>
+                            <tr>
+                                <td>Motor Temperature</td>
+                                <td>${vehicleState.motorTemperature.toFixed(1)} °C</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Motor Performance</h5>
+                        <table class="table table-striped">
+                            <tr>
+                                <td>Motor Efficiency</td>
+                                <td>${vehicleState.motorEfficiency.toFixed(1)}%</td>
+                            </tr>
+                            <tr>
+                                <td>Power Losses</td>
+                                <td>${(vehicleState.powerDemand * (1 - vehicleState.motorEfficiency / 100)).toFixed(1)} kW</td>
+                            </tr>
+                            <tr>
+                                <td>Speed Ratio</td>
+                                <td>${(vehicleState.motorSpeed / vehicleParams.motorNominalSpeed).toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td>Torque Ratio</td>
+                                <td>${(vehicleState.motorTorque / (vehicleParams.motorPower * 1000 / (vehicleParams.motorNominalSpeed * 2 * Math.PI / 60))).toFixed(2)}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <hr>
+                <h5>Motor Operating Point</h5>
+                <div class="row">
+                    <div class="col-md-12">
+                        <p>The motor is currently operating at ${Math.round(vehicleState.motorSpeed)} rpm and ${vehicleState.motorTorque.toFixed(1)} Nm.</p>
+                        <p>This represents ${(vehicleState.motorSpeed / vehicleParams.motorNominalSpeed * 100).toFixed(1)}% of nominal speed and 
+                        ${(vehicleState.motorTorque / (vehicleParams.motorPower * 1000 / (vehicleParams.motorNominalSpeed * 2 * Math.PI / 60)) * 100).toFixed(1)}% of nominal torque.</p>
+                        <p>The motor is operating in the ${vehicleState.motorSpeed > vehicleParams.motorNominalSpeed ? 'field weakening' : 'constant torque'} region.</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function generateEnergyReport() {
+            return `
+                <h4>Energy Consumption Report</h4>
+                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <p>Simulation Time: ${currentTime.toFixed(1)} seconds (${(currentTime / 60).toFixed(1)} minutes)</p>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Energy Consumption</h5>
+                        <table class="table table-striped">
+                            <tr>
+                                <td>Energy Used</td>
+                                <td>${(vehicleParams.batteryCapacity * (batteryParams.initialSoc - vehicleState.batterySoc)).toFixed(2)} kWh</td>
+                            </tr>
+                            <tr>
+                                <td>Energy Consumption Rate</td>
+                                <td>${(vehicleParams.batteryCapacity * (batteryParams.initialSoc - vehicleState.batterySoc) / (vehicleState.distance / 1000) * 100).toFixed(2)} kWh/100km</td>
+                            </tr>
+                            <tr>
+                                <td>Average Power</td>
+                                <td>${(vehicleParams.batteryCapacity * (batteryParams.initialSoc - vehicleState.batterySoc) * 3600 / currentTime).toFixed(1)} kW</td>
+                            </tr>
+                            <tr>
+                                <td>Current Power</td>
+                                <td>${vehicleState.powerDemand.toFixed(1)} kW</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Range Estimation</h5>
+                        <table class="table table-striped">
+                            <tr>
+                                <td>Remaining Energy</td>
+                                <td>${(vehicleParams.batteryCapacity * vehicleState.batterySoc).toFixed(2)} kWh</td>
+                            </tr>
+                            <tr>
+                                <td>Estimated Remaining Range</td>
+                                <td>${(vehicleState.distance / (batteryParams.initialSoc - vehicleState.batterySoc) * vehicleState.batterySoc / 1000).toFixed(1)} km</td>
+                            </tr>
+                            <tr>
+                                <td>Total Estimated Range</td>
+                                <td>${(vehicleState.distance / (batteryParams.initialSoc - vehicleState.batterySoc) / 1000).toFixed(1)} km</td>
+                            </tr>
+                            <tr>
+                                <td>Range Efficiency</td>
+                                <td>${(vehicleState.distance / 1000 / (vehicleParams.batteryCapacity * (batteryParams.initialSoc - vehicleState.batterySoc))).toFixed(2)} km/kWh</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <hr>
+                <h5>Energy Distribution</h5>
+                <div class="row">
+                    <div class="col-md-12">
+                        <p>The energy consumption can be broken down into the following components:</p>
+                        <ul>
+                            <li>Rolling Resistance: ${(vehicleParams.rollingResistance * vehicleParams.vehicleMass * 9.81 * vehicleState.distance / 3600000).toFixed(2)} kWh (${(vehicleParams.rollingResistance * vehicleParams.vehicleMass * 9.81 * vehicleState.distance / 3600000 / (vehicleParams.batteryCapacity * (batteryParams.initialSoc - vehicleState.batterySoc)) * 100).toFixed(1)}%)</li>
+                            <li>Aerodynamic Drag: ${(0.5 * 1.225 * vehicleParams.dragCoefficient * vehicleParams.frontalArea * vehicleState.speed * vehicleState.speed * vehicleState.distance / 3600000).toFixed(2)} kWh (${(0.5 * 1.225 * vehicleParams.dragCoefficient * vehicleParams.frontalArea * vehicleState.speed * vehicleState.speed * vehicleState.distance / 3600000 / (vehicleParams.batteryCapacity * (batteryParams.initialSoc - vehicleState.batterySoc)) * 100).toFixed(1)}%)</li>
+                            <li>Acceleration: ${(vehicleParams.vehicleMass * vehicleState.acceleration * vehicleState.distance / 3600000).toFixed(2)} kWh (${(vehicleParams.vehicleMass * vehicleState.acceleration * vehicleState.distance / 3600000 / (vehicleParams.batteryCapacity * (batteryParams.initialSoc - vehicleState.batterySoc)) * 100).toFixed(1)}%)</li>
+                            <li>Motor Losses: ${(vehicleParams.batteryCapacity * (batteryParams.initialSoc - vehicleState.batterySoc) * (1 - vehicleState.motorEfficiency / 100)).toFixed(2)} kWh (${((1 - vehicleState.motorEfficiency / 100) * 100).toFixed(1)}%)</li>
+                            <li>Battery Losses: ${(vehicleParams.batteryCapacity * (batteryParams.initialSoc - vehicleState.batterySoc) * 0.05).toFixed(2)} kWh (5.0%)</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function generateFullReport() {
+            return `
+                <h4>Full Detailed Simulation Report</h4>
+                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <p>Simulation Time: ${currentTime.toFixed(1)} seconds (${(currentTime / 60).toFixed(1)} minutes)</p>
+                <hr>
+                <h5>Vehicle Parameters</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-striped">
+                            <tr>
+                                <td>Battery Capacity</td>
+                                <td>${vehicleParams.batteryCapacity} kWh</td>
+                            </tr>
+                            <tr>
+                                <td>Battery Nominal Voltage</td>
+                                <td>${vehicleParams.batteryNominalVoltage} V</td>
+                            </tr>
+                            <tr>
+                                <td>Motor Power</td>
+                                <td>${vehicleParams.motorPower} kW</td>
+                            </tr>
+                            <tr>
+                                <td>Motor Nominal Speed</td>
+                                <td>${vehicleParams.motorNominalSpeed} rpm</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-striped">
+                            <tr>
+                                <td>Vehicle Mass</td>
+                                <td>${vehicleParams.vehicleMass} kg</td>
+                            </tr>
+                            <tr>
+                                <td>Wheel Radius</td>
+                                <td>${vehicleParams.wheelRadius} m</td>
+                            </tr>
+                            <tr>
+                                <td>Gear Ratio</td>
+                                <td>${vehicleParams.gearRatio}</td>
+                            </tr>
+                            <tr>
+                                <td>Drag Coefficient</td>
+                                <td>${vehicleParams.dragCoefficient}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <hr>
+                ${generateSummaryReport()}
+                <hr>
+                ${generateBatteryReport()}
+                <hr>
+                ${generateMotorReport()}
+                <hr>
+                ${generateEnergyReport()}
+            `;
+        }
+        
+        // Initialize battery cells
+        initBatteryCells();
+        
+        // Initialize UI
+        updateSpeedDisplay();
+        updateDashboard();
+        updateSimulationTime();
+        
+        // Add event listener for generate report button
+        document.getElementById('generateReportBtn').addEventListener('click', generateDetailedReport);
+        
+        // Initialize download button as disabled
+        document.getElementById('downloadReportBtn').disabled = true;
+    </script>
+    <script src="download_script.js"></script>
+    <script src="motor_rul.js"></script>
+</body>
+    <script src="splash_screen.js"></script>
+</html>
